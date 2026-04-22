@@ -5,6 +5,7 @@ from pathlib import Path
 import httpx
 
 from fetcher import PageFetcher
+from parser import HissaMonthParser
 
 HISSA_URL = 'https://www.hissa.nl/his/maand'
 
@@ -28,8 +29,13 @@ def main() -> None:
     )
 
     html_file = fetcher.fetch()
+    html = html_file.read_text(encoding='utf-8')
 
-    print(f'[OK] HTML available at: {html_file}')
+    parser = HissaMonthParser()
+    parsed_days = parser.parse(html)
+
+    for day in parsed_days[:7]:
+        print(day)
 
 
 if __name__ == '__main__':
