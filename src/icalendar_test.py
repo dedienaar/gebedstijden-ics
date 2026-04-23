@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from datetime import date
+from pathlib import Path
 
 import pytest
 
-from icalendar import CalendarBuilder, UIDGenerator
+from icalendar import CalendarBuilder, IcsWriter, UIDGenerator
 from models import PrayerDay
 
 # --- UID GENERATOR ---
@@ -182,3 +183,31 @@ def test_invalid_time_format_raises():
 
     with pytest.raises(ValueError):
         CalendarBuilder().build([day])
+
+
+def test_writer_persists_ics(tmp_path: Path):
+    day = PrayerDay(
+        date=date(2026, 4, 20),
+        fajr='04:20',
+        sunrise='06:28',
+        dhuhr='13:46',
+        asr='17:38',
+        maghrib='20:54',
+        isha='22:44',
+    )
+
+    calendar = CalendarBuilder().build([day])
+    output = tmp_path / 'prayer_times.ics'
+
+    written_path = IcsWriter(output).write(calendar)
+
+    assert written_path.exists()
+
+    content = written_path.read_text(encoding='utf-8')
+
+    assert 'BEGIN:VCALENDAR' in content
+    assert 'END:VCALENDAR' in content
+
+    assert content.count('BEGIN:VEVENT') == 6
+    assert 'SUMMARY:Fajr' in content
+    assert 'SUMMARY:Sunrise' in content

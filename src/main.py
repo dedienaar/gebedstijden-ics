@@ -5,37 +5,44 @@ from pathlib import Path
 import httpx
 
 from fetcher import PageFetcher
+from icalendar import CalendarBuilder, IcsWriter
 from parser import HissaMonthParser
 
-HISSA_URL = 'https://www.hissa.nl/his/maand'
-
-
-def build_http_client() -> httpx.Client:
-    return httpx.Client(timeout=10.0)
-
-
-def build_cache_path() -> Path:
-    return Path('.tmp') / 'hissa_month.html'
+URL = 'https://www.hissa.nl/his/maand'
+CACHE_PATH = Path('.tmp/hissa_month.html')
+OUTPUT_PATH = Path('export/prayer_times.ics')
 
 
 def main() -> None:
-    cache_path = build_cache_path()
+    # --- Fetch ---
+    with httpx.Client(timeout=10.0) as client:
+        fetcher = PageFetcher(
+            client=client,
+            url=URL,
+            cache_path=CACHE_PATH,
+            ttl_seconds=6 * 3600,
+        )
 
-    fetcher = PageFetcher(
-        client=build_http_client(),
-        url=HISSA_URL,
-        cache_path=cache_path,
-        ttl_seconds=6 * 3600,  # 6 hours
-    )
+        html_path = fetcher.fetch()
 
-    html_file = fetcher.fetch()
-    html = html_file.read_text(encoding='utf-8')
+    # --- Parse ---
+    html = html_path.read_text(encoding='utf-8')
 
     parser = HissaMonthParser()
-    parsed_days = parser.parse(html)
+    days = parser.parse(html)
 
-    for day in parsed_days[:7]:
-        print(day)
+    if not days:
+        raise RuntimeError('No prayer days parsed — aborting to avoid empty ICS output')
+
+    # --- Build calendar ---
+    builder = CalendarBuilder()
+    calendar = builder.build(days)
+
+    # --- Write ICS ---
+    writer = IcsWriter(OUTPUT_PATH)
+    writer.write(calendar)
+
+    print(f'Generated {len(calendar.events)} events → {OUTPUT_PATH}')
 
 
 if __name__ == '__main__':

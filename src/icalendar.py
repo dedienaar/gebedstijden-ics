@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import hashlib
 from datetime import date, datetime, timedelta
+from pathlib import Path
+from tempfile import NamedTemporaryFile
 from zoneinfo import ZoneInfo
 
 from ics import Calendar, Event
@@ -55,11 +57,11 @@ class CalendarBuilder:
         begin = self._to_datetime(event_date, time_str)
 
         event = Event()
+        event.uid = self._uid_generator.generate(event_date, event_name)
         event.name = event_name
         event.begin = begin
         event.end = begin + self._duration
-        event.uid = self._uid_generator.generate(event_date, event_name)
-        event.description = f'{event_name} time'
+        event.description = f'{event_name}'
 
         calendar.events.add(event)
 
@@ -73,3 +75,25 @@ class CalendarBuilder:
             minute,
             tzinfo=self._tz,
         )
+
+
+class IcsWriter:
+    def __init__(self, output_path: Path) -> None:
+        self._output_path = output_path
+
+    def write(self, calendar: Calendar) -> Path:
+        self._output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        ics_text = calendar.serialize()
+
+        with NamedTemporaryFile(
+            mode='w',
+            encoding='utf-8',
+            dir=self._output_path.parent,
+            delete=False,
+        ) as tmp_file:
+            tmp_file.write(ics_text)
+            tmp_path = Path(tmp_file.name)
+
+        tmp_path.replace(self._output_path)
+        return self._output_path
