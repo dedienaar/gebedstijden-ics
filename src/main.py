@@ -4,8 +4,8 @@ from pathlib import Path
 
 import httpx
 
+from calendar_builder import CalendarBuilder, IcsWriter
 from fetcher import PageFetcher
-from icalendar import CalendarBuilder, IcsWriter
 from parser import HissaMonthParser
 
 URL = 'https://www.hissa.nl/his/maand'
@@ -35,14 +35,23 @@ def main() -> None:
         raise RuntimeError('No prayer days parsed — aborting to avoid empty ICS output')
 
     # --- Build calendar ---
-    builder = CalendarBuilder()
-    calendar = builder.build(days)
+    calendar_builder = CalendarBuilder()
+
+    calendar_builder.add_events(days)
+
+    calendar_builder.add_metadata('PRODID', '-//Hissa Prayer Calendar//NL//EN')
+    calendar_builder.add_metadata('X-WR-CALNAME', 'Prayer Times')
+    calendar_builder.add_metadata('X-WR-CALDESC', 'Daily prayer times from Hissa')
+    calendar_builder.add_metadata('X-WR-TIMEZONE', 'Europe/Amsterdam')
+    calendar_builder.add_metadata('X-PUBLISHED-TTL', 'PT12H')
+
+    result = calendar_builder.build()
 
     # --- Write ICS ---
     writer = IcsWriter(OUTPUT_PATH)
-    writer.write(calendar)
+    writer.write(result.calendar)
 
-    print(f'Generated {len(calendar.events)} events → {OUTPUT_PATH}')
+    print(f'Generated {len(result.events)} events → {OUTPUT_PATH}')
 
 
 if __name__ == '__main__':
