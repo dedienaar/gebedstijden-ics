@@ -213,6 +213,7 @@ def test_writer_persists_ics(day1: PrayerDay, tmp_path: Path):
 
     assert 'BEGIN:VCALENDAR' in content
     assert 'END:VCALENDAR' in content
+    assert 'VERSION:2.0' in content
 
     assert content.count('BEGIN:VEVENT') == 6
     assert 'SUMMARY:🌃 Fajr' in content
@@ -221,3 +222,16 @@ def test_writer_persists_ics(day1: PrayerDay, tmp_path: Path):
     assert 'SUMMARY:🌆 Asr' in content
     assert 'SUMMARY:🌄 Maghrib' in content
     assert 'SUMMARY:🌌 Isha' in content
+
+
+def test_ics_datetime_format_is_valid(day1: PrayerDay, tmp_path: Path):
+    import re
+
+    result = build_calendar([day1])
+    output = tmp_path / 'prayer_times.ics'
+
+    content = IcsWriter(output).write(result.calendar).read_text(encoding='utf-8')
+
+    for field in ('DTSTART', 'DTEND'):
+        matches = re.findall(rf'{field};TZID=[^:]+:\d{{8}}T\d{{6}}', content)
+        assert len(matches) == 6

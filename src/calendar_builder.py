@@ -8,7 +8,7 @@ from tempfile import NamedTemporaryFile
 from typing import Protocol
 from zoneinfo import ZoneInfo
 
-from icalendar import Calendar, Event
+from icalendar import Calendar, Event, vDatetime
 
 from models import PrayerDay
 
@@ -72,6 +72,7 @@ class CalendarBuilder:
         self._tz = ZoneInfo(timezone)
         self._duration = timedelta(minutes=duration_minutes)
         self._calendar = Calendar()
+        self._calendar.add('version', '2.0')
         self._metadata: dict[str, str] = {}
         self._events: list[CalendarEvent] = []
 
@@ -96,8 +97,8 @@ class CalendarBuilder:
         uid = generate_uid(event_date, name)
         event['uid'] = uid
         event['summary'] = name
-        event['dtstart'] = begin
-        event['dtend'] = end
+        event['dtstart'] = vDatetime(begin)
+        event['dtend'] = vDatetime(end)
 
         self._calendar.add_component(event)
         self._events.append(
