@@ -36,3 +36,8 @@ jobs:
 
           git commit -m "chore: regenerate prayer times"
           git push origin HEAD
+      
+      - run: |
+          sha256sum export/prayer_times.ics
+          git hash-object export/prayer_times.ics
+          git hash-object HEAD:export/prayer_times.ics

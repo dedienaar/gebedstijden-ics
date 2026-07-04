@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import httpx
@@ -11,9 +12,12 @@ from parser import HissaMonthParser
 ROOT_PATH = Path(__file__).resolve().parent.parent
 
 CACHE_FILE = ROOT_PATH / '.tmp/hissa_month.html'
+CACHE_TTL = 0 if os.getenv('GITHUB_ACTIONS') else 6 * 3600
+
 OUTPUT_FILE = ROOT_PATH / 'export/prayer_times.ics'
 
 FETCH_URL = 'https://www.hissa.nl/his/maand'
+
 
 def main() -> None:
     # --- Fetch ---
@@ -22,7 +26,7 @@ def main() -> None:
             client=client,
             url=FETCH_URL,
             cache_path=CACHE_FILE,
-            ttl_seconds=6 * 3600,
+            ttl_seconds=CACHE_TTL,
         )
 
         html_path = fetcher.fetch()
