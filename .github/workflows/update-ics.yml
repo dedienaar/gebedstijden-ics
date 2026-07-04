@@ -38,6 +38,12 @@ jobs:
           git push origin HEAD
       
       - run: |
-          sha256sum export/prayer_times.ics
+          git status --porcelain
+          git diff --stat
+          git diff --cached --stat
+
+          echo "Working tree blob:"
           git hash-object export/prayer_times.ics
-          git hash-object HEAD:export/prayer_times.ics
+
+          echo "HEAD blob:"
+          git rev-parse --verify HEAD:export/prayer_times.ics || echo "(not present in HEAD)"
