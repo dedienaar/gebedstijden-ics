@@ -11,6 +11,7 @@ permissions:
 jobs:
   update:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v6
         with:
@@ -18,7 +19,14 @@ jobs:
 
       - uses: astral-sh/setup-uv@v8.2.0
 
-      - run: uv run src/main.py
+      - name: Generate ICS
+        run: uv run src/main.py
+
+      - name: Debug changes (optional)
+        run: |
+          git status --porcelain
+          git diff --stat
+          git diff --cached --stat || true
 
       - name: Commit changes
         run: |
@@ -27,8 +35,6 @@ jobs:
 
           git add export/prayer_times.ics
 
-          git status
-
           if git diff --cached --quiet; then
             echo "No changes to commit."
             exit 0
@@ -36,14 +42,3 @@ jobs:
 
           git commit -m "chore: regenerate prayer times"
           git push origin HEAD
-      
-      - run: |
-          git status --porcelain
-          git diff --stat
-          git diff --cached --stat
-
-          echo "Working tree blob:"
-          git hash-object export/prayer_times.ics
-
-          echo "HEAD blob:"
-          git rev-parse --verify HEAD:export/prayer_times.ics || echo "(not present in HEAD)"
