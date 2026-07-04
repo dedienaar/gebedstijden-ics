@@ -1,9 +1,9 @@
 name: Update Prayer Times ICS
 
 on:
-  schedule:
-    - cron: '0 */12 * * *'
   workflow_dispatch:
+  schedule:
+    - cron: "0 */12 * * *"
 
 permissions:
   contents: write
@@ -13,16 +13,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+      - uses: astral-sh/setup-uv@v8.2.0
 
-      - name: Generate prayer times
-        run: uv run src/main.py
+      - run: uv run src/main.py
 
-      - name: Commit changes if needed
+      - name: Commit changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
           git add export/prayer_times.ics
-          git diff --cached --quiet || (git commit -m "chore: regenerate prayer times" && git push)
+
+          git status
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+
+          git commit -m "chore: regenerate prayer times"
+          git push origin HEAD
