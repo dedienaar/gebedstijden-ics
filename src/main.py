@@ -8,18 +8,20 @@ from calendar_builder import CalendarBuilder, IcsWriter
 from fetcher import PageFetcher
 from parser import HissaMonthParser
 
-URL = 'https://www.hissa.nl/his/maand'
-CACHE_PATH = Path('.tmp/hissa_month.html')
-OUTPUT_PATH = Path('export/prayer_times.ics')
+ROOT_PATH = Path(__file__).resolve().parent.parent
 
+CACHE_FILE = ROOT_PATH / '.tmp/hissa_month.html'
+OUTPUT_FILE = ROOT_PATH / 'export/prayer_times.ics'
+
+FETCH_URL = 'https://www.hissa.nl/his/maand'
 
 def main() -> None:
     # --- Fetch ---
     with httpx.Client(timeout=10.0) as client:
         fetcher = PageFetcher(
             client=client,
-            url=URL,
-            cache_path=CACHE_PATH,
+            url=FETCH_URL,
+            cache_path=CACHE_FILE,
             ttl_seconds=6 * 3600,
         )
 
@@ -48,10 +50,10 @@ def main() -> None:
     result = calendar_builder.build()
 
     # --- Write ICS ---
-    writer = IcsWriter(OUTPUT_PATH)
+    writer = IcsWriter(OUTPUT_FILE)
     writer.write(result.calendar)
 
-    print(f'Generated {len(result.events)} events → {OUTPUT_PATH}')
+    print(f'Generated {len(result.events)} events → {OUTPUT_FILE}')
 
 
 if __name__ == '__main__':
